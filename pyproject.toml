@@ -1,0 +1,219 @@
+[tool.black]
+line-length = 125
+target-version = ["py310", "py311"]
+
+[tool.pylint]
+[tool.pylint.main]
+ignore = ["3rdparty"]
+ignore-patterns = ""
+persistent = "no"
+load-plugins = ["pylint_pydantic"]
+jobs = 4
+unsafe-load-any-extension = "no"
+
+[tool.pylint."MESSAGES CONTROL"]
+confidence = ""
+disable = [
+    "abstract-method",
+    "apply-builtin",
+    "arguments-differ",
+    "attribute-defined-outside-init",
+    "backtick",
+    "bad-option-value",
+    "basestring-builtin",
+    "buffer-builtin",
+    "c-extension-no-member",
+    "consider-using-enumerate",
+    "cmp-builtin",
+    "cmp-method",
+    "coerce-builtin",
+    "coerce-method",
+    "delslice-method",
+    "div-method",
+    "duplicate-code",
+    "eq-without-hash",
+    "execfile-builtin",
+    "file-builtin",
+    "filter-builtin-not-iterating",
+    "fixme",
+    "getslice-method",
+    "global-statement",
+    "hex-method",
+    "idiv-method",
+    "implicit-str-concat",
+    "import-error",
+    "import-self",
+    "import-star-module-level",
+    "inconsistent-return-statements",
+    "input-builtin",
+    "intern-builtin",
+    "invalid-str-codec",
+    "locally-disabled",
+    "long-builtin",
+    "long-suffix",
+    "map-builtin-not-iterating",
+    "misplaced-comparison-constant",
+    "missing-function-docstring",
+    "metaclass-assignment",
+    "next-method-called",
+    "next-method-defined",
+    "no-absolute-import",
+    "no-else-break",
+    "no-else-continue",
+    "no-else-raise",
+    "no-else-return",
+    "no-init",
+    "no-member",
+    "no-name-in-module",
+    "no-self-use",
+    "nonzero-method",
+    "oct-method",
+    "old-division",
+    "old-ne-operator",
+    "old-octal-literal",
+    "old-raise-syntax",
+    "parameter-unpacking",
+    "print-statement",
+    "pointless-string-statement",
+    "raising-string",
+    "range-builtin-not-iterating",
+    "raw_input-builtin",
+    "rdiv-method",
+    "reduce-builtin",
+    "relative-import",
+    "reload-builtin",
+    "round-builtin",
+    "setslice-method",
+    "signature-differs",
+    "standarderror-builtin",
+    "suppressed-message",
+    "sys-max-int",
+    "too-few-public-methods",
+    "too-many-ancestors",
+    "too-many-arguments",
+    "too-many-boolean-expressions",
+    "too-many-branches",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "too-many-nested-blocks",
+    "too-many-public-methods",
+    "too-many-return-statements",
+    "too-many-statements",
+    "trailing-newlines",
+    "unichr-builtin",
+    "unicode-builtin",
+    "unnecessary-pass",
+    "unpacking-in-except",
+    "useless-else-on-loop",
+    "useless-object-inheritance",
+    "useless-suppression",
+    "using-cmp-argument",
+    "wrong-import-order",
+    "xrange-builtin",
+    "zip-builtin-not-iterating",
+]
+
+[tool.pylint."REPORTS"]
+output-format = "text"
+reports = "no"
+evaluation = "10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)"
+
+[tool.pylint."BASIC"]
+good-names = ["main", "_"]
+bad-names = ""
+name-group = ""
+include-naming-hint = "no"
+property-classes = [
+    "abc.abstractproperty",
+    "cached_property.cached_property",
+    "cached_property.threaded_cached_property",
+    "cached_property.cached_property_with_ttl",
+    "cached_property.threaded_cached_property_with_ttl",
+]
+function-rgx = "^(?:(?P<exempt>setUp|tearDown|setUpModule|tearDownModule)|(?P<camel_case>_?[A-Z][a-zA-Z0-9]*)|(?P<snake_case>_?[a-z][a-z0-9_]*))$"
+variable-rgx = "^[a-z][a-z0-9_]*$"
+const-rgx = "^(_?[A-Z][A-Z0-9_]*|__[a-z0-9_]+__|_?[a-z][a-z0-9_]*)$"
+attr-rgx = "^_{0,2}[a-z][a-z0-9_]*$"
+argument-rgx = "^[a-z][a-z0-9_]*$"
+class-attribute-rgx = "^(_?[A-Z][A-Z0-9_]*|__[a-z0-9_]+__|_?[a-z][a-z0-9_]*)$"
+inlinevar-rgx = "^[a-z][a-z0-9_]*$"
+class-rgx = "^_?[A-Z][a-zA-Z0-9]*$"
+module-rgx = "^(_?[a-z][a-z0-9_]*|__init__)$"
+method-rgx = "(?x)^(?:(?P<exempt>_[a-z0-9_]+__|runTest|setUp|tearDown|setUpTestCase|tearDownTestCase|setupSelf|tearDownClass|setUpClass|(test|assert)_*[A-Z0-9][a-zA-Z0-9_]*|next)|(?P<camel_case>_{0,2}[A-Z][a-zA-Z0-9_]*)|(?P<snake_case>_{0,2}[a-z][a-z0-9_]*))$"
+no-docstring-rgx = "(__.*__|main|test.*|.*test|.*Test)$"
+docstring-min-length = 10
+
+[tool.pylint."TYPECHECK"]
+contextmanager-decorators = [
+    "contextlib.contextmanager",
+    "contextlib2.contextmanager",
+]
+ignore-mixin-members = "yes"
+ignored-modules = ""
+ignored-classes = ["optparse.Values", "thread._local", "_thread._local"]
+generated-members = ""
+
+[tool.pylint."FORMAT"]
+ignore-long-lines = '''(?x)(^\s*(\#\ )?<?https?://\S+>?$|^\s*(from\s+\S+\s+)?import\s+.+$)'''
+max-line-length = 125
+single-line-if-stmt = "yes"
+max-module-lines = 99999
+indent-string = '    '
+indent-after-paren = 4
+expected-line-ending-format = ""
+
+[tool.pylint."MISCELLANEOUS"]
+notes = "TODO"
+
+[tool.pylint."STRING"]
+check-quote-consistency = "yes"
+
+[tool.pylint."VARIABLES"]
+dummy-variables-rgx = '''^\*{0,2}(_$|unused_|dummy_)'''
+init-import = "no"
+additional-builtins = ""
+callbacks = ["cb_", "_cb"]
+redefining-builtins-modules = [
+    "six",
+    "six.moves",
+    "past.builtins",
+    "future.builtins",
+    "functools",
+]
+
+[tool.pylint."LOGGING"]
+logging-modules = ["logging", "absl.logging", "tensorflow.io.logging"]
+
+[tool.pylint."SIMILARITIES"]
+min-similarity-lines = 4
+ignore-comments = "yes"
+ignore-docstrings = "yes"
+ignore-imports = "no"
+
+[tool.pylint."SPELLING"]
+spelling-dict = ""
+spelling-ignore-words = ""
+spelling-private-dict-file = ""
+spelling-store-unknown-words = "no"
+
+[tool.pylint."IMPORTS"]
+deprecated-modules = ["regsub", "TERMIOS", "Bastion", "rexec", "sets"]
+import-graph = ""
+ext-import-graph = ""
+int-import-graph = ""
+known-standard-library = ""
+known-third-party = ["enchant", "absl"]
+analyse-fallback-blocks = "no"
+
+[tool.pylint."CLASSES"]
+defining-attr-methods = ["__init__", "__new__", "setUp"]
+exclude-protected = ["_asdict", "_fields", "_replace", "_source", "_make"]
+valid-classmethod-first-arg = ["cls", "class_"]
+valid-metaclass-classmethod-first-arg = "mcs"
+
+[tool.pylint."EXCEPTIONS"]
+overgeneral-exceptions = [
+    "builtins.StandardError",
+    "builtins.Exception",
+    "builtins.BaseException",
+]
