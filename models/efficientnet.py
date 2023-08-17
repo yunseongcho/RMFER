@@ -5,7 +5,6 @@ EfficientNet-b2 정의 모듈
 import os
 
 import numpy as np
-import timm
 import torch
 from torch import nn
 
@@ -18,25 +17,19 @@ class EfficientNet(nn.Module):
     def __init__(self, emotions: int = 7, self_mask: bool = True, gamma: float = 0.1, scale: float = 0.25):
         super().__init__()
 
-        # Base model 정의
-        model = timm.create_model("tf_efficientnet_b2_ns", pretrained=False)
+        # model init
         if emotions == 7:
-            model.classifier = nn.Linear(in_features=1408, out_features=7)
-            model.load_state_dict(torch.load("./enet_b2_7.pt").state_dict())
+            self.backbone = torch.load("./weights/enet_b2_backbone_7emo.pth")
+            self.classifier_att = torch.load("./weights/enet_b2_classifier_7emo.pth")
+            self.classifier_main = torch.load("./weights/enet_b2_classifier_7emo.pth")
         elif emotions == 8:
-            model.classifier = nn.Linear(in_features=1408, out_features=8)
-            model.load_state_dict(torch.load("./enet_b2_8.pt").state_dict())
-
-        modules = list(model.children())[:-1]
-
-        # backbone 정의
-        self.backbone = nn.Sequential(*modules)
+            self.backbone = torch.load("./weights/enet_b2_backbone_8emo.pth")
+            self.classifier_att = torch.load("./weights/enet_b2_classifier_8emo.pth")
+            self.classifier_main = torch.load("./weights/enet_b2_classifier_8emo.pth")
 
         self.projection_head = nn.Sequential(
             nn.Linear(in_features=1408, out_features=1408), nn.ReLU(), nn.Linear(in_features=1408, out_features=1408)
         )
-        self.classifier_att = nn.Linear(in_features=1408, out_features=emotions)
-        self.classifier_main = list(model.children())[-1]
 
         # Attention param
         self.self_mask = self_mask
@@ -45,50 +38,39 @@ class EfficientNet(nn.Module):
         # Contrastive param
         self.gamma = gamma
 
-    def forward(self, x):
-        origin_f = self.get_feature(x)
-        origin_outputs = self.classifier_main(origin_f)
-
-        S = self.get_cossimMat(origin_f)
-        A = self.processing_A(S, self.att_mode)
-
-        att_f = torch.matmul(A, origin_f)
-        # use or not classifier_att
-        if self.useClsAtt:
-            att_outputs = self.classifier_att(att_f)
-        else:
-            att_outputs = self.classifier_main(att_f)
-        return origin_outputs, att_outputs, A
-
     def get_feature(self, x):
         return self.backbone(x)
 
-    def get_cossimMat(self, f):
-        # use or not projection head
-        if self.useHead:
-            z = self.projection_head(f)
-        else:
-            z = f
-        S = torch.matmul(z, z.T)
+    def get_cos_sim_mat(self, f):
+        z = self.projection_head(f)
+        similarity_matrix = torch.matmul(z, z.T)
         norms = torch.norm(z, dim=1)
         norms = norms.view(1, -1)
-        return (S / torch.matmul(norms.T, norms)) / self.scale
+        return (similarity_matrix / torch.matmul(norms.T, norms)) / self.scale
 
-    def softmax_A(self, A):
-        A = nn.Softmax(dim=1)(A)
-        return A
+    def forward(self, x):
+        origin_feature = self.get_feature(x)
+        origin_output_tensor = self.classifier_main(origin_feature)
 
-    def delself_A(self, A):
-        idx = np.diag_indices(A.shape[0])
-        A[idx[0], idx[1]] = (-10e6 * torch.ones(A.shape[0])).to(A.device).detach()
-        return A
+        cos_sim_matrix = self.get_cos_sim_mat(origin_feature)
+        attention_matrix = self.get_att_mat(cos_sim_matrix, self.self_mask)
 
-    def processing_A(self, A, mode):
-        if mode == "s":
-            A = self.softmax_A(A)
-        elif mode == "ds":
-            A = self.softmax_A(self.delself_A(A))
-        return A
+        attention_feature = torch.matmul(attention_matrix, origin_feature)
+        attention_output_tensor = self.classifier_att(attention_feature)
+
+        return origin_output_tensor, attention_output_tensor, attention_matrix
+
+    def self_masking(self, matrix):
+        idx = np.diag_indices(matrix.shape[0])
+        matrix[idx[0], idx[1]] = (-10e6 * torch.ones(matrix.shape[0])).to(matrix.device).detach()
+        return matrix
+
+    def get_att_mat(self, matrix, self_masking):
+        if self_masking:
+            matrix = self.self_masking(matrix)
+
+        attention_matrix = nn.Softmax(dim=1)(matrix)
+        return attention_matrix
 
     def get_positive(self, anchor, samples):
         with torch.no_grad():
