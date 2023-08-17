@@ -7,7 +7,7 @@ target-version = ["py310", "py311"]
 ignore = ["3rdparty"]
 ignore-patterns = ""
 persistent = "no"
-load-plugins = ["pylint_pydantic"]
+load-plugins = []
 jobs = 4
 unsafe-load-any-extension = "no"
 
