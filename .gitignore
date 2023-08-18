@@ -1,2 +1,5 @@
+# pychach
+*.pyc
+
 # testing 용
-test.ipynb
+test.*
