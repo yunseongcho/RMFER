@@ -14,10 +14,22 @@ class EfficientNet(nn.Module):
     efficientnet-b2 for FER
     """
 
-    def __init__(self, emotions: int = 7, self_mask: bool = True, gamma: float = 0.1, scale: float = 0.25):
+    def __init__(self, emotions: int, scale: float, self_masking: bool, sampling_ratio: float):
+        """
+        model initialize
+
+        Args:
+            emotions (int): n_classes for FER
+            scale (float): scale factor (tau)
+            self_masking (bool): using self-masking or not
+            sampling_ratio (float): sampling ratio in ACL (gamma)
+        """
+
         super().__init__()
 
         # model init
+        self.model_name = "enet"
+
         if emotions == 7:
             self.backbone = torch.load("./weights/enet_b2_backbone_7emo.pth")
             self.classifier_att = torch.load("./weights/enet_b2_classifier_7emo.pth")
@@ -32,52 +44,159 @@ class EfficientNet(nn.Module):
         )
 
         # Attention param
-        self.self_mask = self_mask
+        self.self_masking = self_masking
         self.scale = scale
 
         # Contrastive param
-        self.gamma = gamma
+        self.sampling_ratio = sampling_ratio
 
-    def get_feature(self, x):
+    def get_feature(self, x: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+            x (torch.Tensor): input image
+
+        Returns:
+            torch.Tensor: CNN feature
+        """
+
         return self.backbone(x)
 
-    def get_cos_sim_mat(self, f):
+    def get_cos_sim_mat(self, f: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+            f (torch.Tensor): feature
+
+        Returns:
+            torch.Tensor: scaled cosine similarity matrix
+        """
+
+        # feature to z
         z = self.projection_head(f)
-        similarity_matrix = torch.matmul(z, z.T)
+
+        # dot product sim mat
+        sim_mat = torch.matmul(z, z.T)
+
         norms = torch.norm(z, dim=1)
         norms = norms.view(1, -1)
-        return (similarity_matrix / torch.matmul(norms.T, norms)) / self.scale
 
-    def forward(self, x):
+        # cosine similarity matrix
+        cos_sim_mat = sim_mat / torch.matmul(norms.T, norms)
+
+        # scaling
+        return cos_sim_mat / self.scale
+
+    def forward(self, x: torch.Tensor) -> (torch.Tensor, torch.Tensor, torch.Tensor):
+        """
+
+        Args:
+            x: input image tensor
+
+        Returns:
+            origin_output_tensor: model's traditional output
+            attention_output_tensor: model's attention output
+                                     made by referring other images in the batch
+            att_mat: attention matrix
+        """
+
         origin_feature = self.get_feature(x)
         origin_output_tensor = self.classifier_main(origin_feature)
 
-        cos_sim_matrix = self.get_cos_sim_mat(origin_feature)
-        attention_matrix = self.get_att_mat(cos_sim_matrix, self.self_mask)
+        # origin feature로부터 cosine similarity matrix 생성
+        cos_sim_mat = self.get_cos_sim_mat(origin_feature)
 
-        attention_feature = torch.matmul(attention_matrix, origin_feature)
+        # cosine similarity matrix 로부터 실제 feature 와 곱해질 attention matrix 생성
+        att_mat = self.get_att_mat(cos_sim_mat, self.self_masking)
+
+        # attention matrix와 origin feature 를 곱해 attention feature 생성
+        attention_feature = torch.matmul(att_mat, origin_feature)
+
+        # attention feature를 classifier_att 통과시켜 attention output 생성
         attention_output_tensor = self.classifier_att(attention_feature)
 
-        return origin_output_tensor, attention_output_tensor, attention_matrix
+        return origin_output_tensor, attention_output_tensor, att_mat
 
-    def self_masking(self, matrix):
+    def self_masking_matrix(self, matrix: torch.Tensor) -> torch.Tensor:
+        """
+
+        Args:
+            matrix (torch.Tensor): matrix whose diagonal will be -10e6
+
+        Returns:
+            torch.Tensor: self-masked similarity matrix
+        """
+
         idx = np.diag_indices(matrix.shape[0])
         matrix[idx[0], idx[1]] = (-10e6 * torch.ones(matrix.shape[0])).to(matrix.device).detach()
         return matrix
 
-    def get_att_mat(self, matrix, self_masking):
-        if self_masking:
-            matrix = self.self_masking(matrix)
+    def get_att_mat(self, matrix: torch.Tensor, self_masking: bool) -> torch.Tensor:
+        """
 
+        Args:
+            matrix (torch.Tensor): scaled cosine similarity matrix
+            self_masking (bool): is self masked?
+
+        Returns:
+            torch.Tensor: attention matrix applied softmax by row
+        """
+
+        # self masking
+        if self_masking:
+            matrix = self.self_masking_matrix(matrix)
+
+        # get attention matrix
         attention_matrix = nn.Softmax(dim=1)(matrix)
         return attention_matrix
 
+    def save_model(self, save_root: str, epoch: int | str) -> None:
+        """
+        save model's module
+
+        Args:
+            save_root (str): save_root
+            epoch (int | str): epoch
+        """
+
+        backbone_path = os.path.join(save_root, f"{self.model_name}_backbone_{epoch:04}.pth")
+        projection_path = os.path.join(save_root, f"{self.model_name}_projection_{epoch:04}.pth")
+        classifier_main_path = os.path.join(save_root, f"{self.model_name}_classifier_main_{epoch:04}.pth")
+        classifier_att_path = os.path.join(save_root, f"{self.model_name}_classifier_att_{epoch:04}.pth")
+
+        torch.save(self.backbone, backbone_path)
+        torch.save(self.projection_head, projection_path)
+        torch.save(self.classifier_main, classifier_main_path)
+        torch.save(self.classifier_att, classifier_att_path)
+
+    def load_model(self, load_root: str, epoch: int | str) -> None:
+        """
+        load model's module
+
+        Args:
+            load_root (str): load_root
+            epoch (int | str): epoch
+        """
+
+        backbone_path = os.path.join(load_root, f"backbone_{epoch:04}.pth")
+        projection_path = os.path.join(load_root, f"projection_{epoch:04}.pth")
+        classifier_main_path = os.path.join(load_root, f"classifier_main_{epoch:04}.pth")
+        classifier_att_path = os.path.join(load_root, f"classifier_att_{epoch:04}.pth")
+
+        self.backbone = torch.load(backbone_path)
+        self.projection_head = torch.load(projection_path)
+        self.classifier_main = torch.load(classifier_main_path)
+        self.classifier_att = torch.load(classifier_att_path)
+
+    """
+    contrastive
+    
     def get_positive(self, anchor, samples):
         with torch.no_grad():
             images = torch.cat([anchor, samples])
-            f = self.get_feature(images)
-            S = self.get_cossimMat(f)
-            threshold = torch.quantile(S[0][1:], 1 - self.thres_per)
+            features = self.get_feature(images)
+            S = self.get_cossimMat(features)
+            threshold = torch.quantile(S[0][1:], 1 - self.gamma)
         return S[0][1:] > threshold
 
     def get_negative(self, anchor, samples):
@@ -102,25 +221,4 @@ class EfficientNet(nn.Module):
         # up = A[0][1:1+len(positives)].sum()
         # low = nn.Softmax(dim=1)(S)[0][1:].sum()
         # up = nn.Softmax(dim=1)(S)[0][1:][A[0][1:]>0].sum()
-
-    def save_model(self, PATH, epoch):
-        backbone_path = os.path.join(PATH, "backbone_{}.pth".format(epoch))
-        projection_path = os.path.join(PATH, "projection_{}.pth".format(epoch))
-        classifier_main_path = os.path.join(PATH, "classifier_main_{}.pth".format(epoch))
-        classifier_att_path = os.path.join(PATH, "classifier_att_{}.pth".format(epoch))
-
-        torch.save(self.backbone.state_dict(), backbone_path)
-        torch.save(self.projection_head.state_dict(), projection_path)
-        torch.save(self.classifier_main.state_dict(), classifier_main_path)
-        torch.save(self.classifier_att.state_dict(), classifier_att_path)
-
-    def load_model(self, PATH, epoch):
-        backbone_path = os.path.join(PATH, "backbone_{}.pth".format(epoch))
-        projection_path = os.path.join(PATH, "projection_{}.pth".format(epoch))
-        classifier_main_path = os.path.join(PATH, "classifier_main_{}.pth".format(epoch))
-        classifier_att_path = os.path.join(PATH, "classifier_att_{}.pth".format(epoch))
-
-        self.backbone.load_state_dict(torch.load(backbone_path))
-        self.projection_head.load_state_dict(torch.load(projection_path))
-        self.classifier_main.load_state_dict(torch.load(classifier_main_path))
-        self.classifier_att.load_state_dict(torch.load(classifier_att_path))
+    """
