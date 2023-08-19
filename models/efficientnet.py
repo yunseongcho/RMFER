@@ -17,11 +17,11 @@ class EfficientNet(nn.Module):
     def __init__(
         self,
         emotions: int,
-        scale: float,
         self_masking: bool,
-        sampling_ratio: float,
-        n_positive: int,
-        n_negative: int,
+        scale: float,
+        sampling_ratio: float | None = None,
+        n_positive: int | None = None,
+        n_negative: int | None = None,
     ):
         """
         model initialize
