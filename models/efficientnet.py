@@ -14,7 +14,9 @@ class EfficientNet(nn.Module):
     efficientnet-b2 for FER
     """
 
-    def __init__(self, emotions: int, scale: float, self_masking: bool, sampling_ratio: float):
+    def __init__(
+        self, emotions: int, scale: float, self_masking: bool, sampling_ratio: float, n_positive: int, n_negative: int
+    ):
         """
         model initialize
 
@@ -48,6 +50,8 @@ class EfficientNet(nn.Module):
         self.scale = scale
 
         # Contrastive param
+        self.n_positive = n_positive
+        self.n_negative = n_negative
         self.sampling_ratio = sampling_ratio
 
     def get_feature(self, x: torch.Tensor) -> torch.Tensor:
@@ -188,15 +192,12 @@ class EfficientNet(nn.Module):
         self.classifier_main = torch.load(classifier_main_path)
         self.classifier_att = torch.load(classifier_att_path)
 
-    """
-    contrastive
-    
-    def get_positive(self, anchor, samples):
-        with torch.no_grad():
-            images = torch.cat([anchor, samples])
-            features = self.get_feature(images)
-            S = self.get_cossimMat(features)
-            threshold = torch.quantile(S[0][1:], 1 - self.gamma)
+    def get_positive(self, anchor, positives, negatives):
+        images = torch.cat([anchor, positives, negatives])
+        features = self.get_feature(images)
+        features
+        S = self.get_cossimMat(features)
+        threshold = torch.quantile(S[0][1:], 1 - self.gamma)
         return S[0][1:] > threshold
 
     def get_negative(self, anchor, samples):
@@ -221,4 +222,3 @@ class EfficientNet(nn.Module):
         # up = A[0][1:1+len(positives)].sum()
         # low = nn.Softmax(dim=1)(S)[0][1:].sum()
         # up = nn.Softmax(dim=1)(S)[0][1:][A[0][1:]>0].sum()
-    """
