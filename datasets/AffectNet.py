@@ -66,7 +66,7 @@ class AffectNet(Dataset):
 
         # label이 될 expression을 받아온다.
         expression = np.array(self.annotation.expression[idx])
-        return image, expression, image_path
+        return image, expression
 
 
 def get_weighted_random_sampler(dataset):

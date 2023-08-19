@@ -1,3 +1,4 @@
+# pylint: disable=invalid-name
 """
 RMFER lightning module
 """
@@ -11,7 +12,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT, TRAIN_DATALOADERS
 from datasets.AffectNet import get_AffectNet_DataLoader
 
 
-class RMFER(pl.LightningModule):
+class RMFER_exp(pl.LightningModule):
     """_summary_
 
     Args:
@@ -41,14 +42,8 @@ class RMFER(pl.LightningModule):
         )
         return loss_pretrain
 
-    def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
-        inputs, labels, image_pathes = batch
-        if batch_idx == 0:
-            txt = "\n".join(list(image_pathes))
-            with open(
-                f"./epoch{self.current_epoch}.txt", "w", encoding="utf-8"
-            ) as f:
-                f.write(txt)
+    def training_step(self, batch, _) -> STEP_OUTPUT:
+        inputs, labels = batch
         return self.attention_step(inputs, labels)
 
     def configure_optimizers(self):
