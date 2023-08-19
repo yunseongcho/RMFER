@@ -15,7 +15,13 @@ class EfficientNet(nn.Module):
     """
 
     def __init__(
-        self, emotions: int, scale: float, self_masking: bool, sampling_ratio: float, n_positive: int, n_negative: int
+        self,
+        emotions: int,
+        scale: float,
+        self_masking: bool,
+        sampling_ratio: float,
+        n_positive: int,
+        n_negative: int,
     ):
         """
         model initialize
@@ -34,15 +40,25 @@ class EfficientNet(nn.Module):
 
         if emotions == 7:
             self.backbone = torch.load("./weights/enet_b2_backbone_7emo.pth")
-            self.classifier_att = torch.load("./weights/enet_b2_classifier_7emo.pth")
-            self.classifier_main = torch.load("./weights/enet_b2_classifier_7emo.pth")
+            self.classifier_att = torch.load(
+                "./weights/enet_b2_classifier_7emo.pth"
+            )
+            self.classifier_main = torch.load(
+                "./weights/enet_b2_classifier_7emo.pth"
+            )
         elif emotions == 8:
             self.backbone = torch.load("./weights/enet_b2_backbone_8emo.pth")
-            self.classifier_att = torch.load("./weights/enet_b2_classifier_8emo.pth")
-            self.classifier_main = torch.load("./weights/enet_b2_classifier_8emo.pth")
+            self.classifier_att = torch.load(
+                "./weights/enet_b2_classifier_8emo.pth"
+            )
+            self.classifier_main = torch.load(
+                "./weights/enet_b2_classifier_8emo.pth"
+            )
 
         self.projection_head = nn.Sequential(
-            nn.Linear(in_features=1408, out_features=1408), nn.ReLU(), nn.Linear(in_features=1408, out_features=1408)
+            nn.Linear(in_features=1408, out_features=1408),
+            nn.ReLU(),
+            nn.Linear(in_features=1408, out_features=1408),
         )
 
         # Attention param
@@ -91,7 +107,9 @@ class EfficientNet(nn.Module):
         # scaling
         return cos_sim_mat / self.scale
 
-    def forward(self, x: torch.Tensor) -> (torch.Tensor, torch.Tensor, torch.Tensor):
+    def forward(
+        self, x: torch.Tensor
+    ) -> (torch.Tensor, torch.Tensor, torch.Tensor):
         """
 
         Args:
@@ -132,10 +150,14 @@ class EfficientNet(nn.Module):
         """
 
         idx = np.diag_indices(matrix.shape[0])
-        matrix[idx[0], idx[1]] = (-10e6 * torch.ones(matrix.shape[0])).to(matrix.device).detach()
+        matrix[idx[0], idx[1]] = (
+            (-10e6 * torch.ones(matrix.shape[0])).to(matrix.device).detach()
+        )
         return matrix
 
-    def get_att_mat(self, matrix: torch.Tensor, self_masking: bool) -> torch.Tensor:
+    def get_att_mat(
+        self, matrix: torch.Tensor, self_masking: bool
+    ) -> torch.Tensor:
         """
 
         Args:
@@ -163,10 +185,18 @@ class EfficientNet(nn.Module):
             epoch (int | str): epoch
         """
 
-        backbone_path = os.path.join(save_root, f"{self.model_name}_backbone_{epoch:04}.pth")
-        projection_path = os.path.join(save_root, f"{self.model_name}_projection_{epoch:04}.pth")
-        classifier_main_path = os.path.join(save_root, f"{self.model_name}_classifier_main_{epoch:04}.pth")
-        classifier_att_path = os.path.join(save_root, f"{self.model_name}_classifier_att_{epoch:04}.pth")
+        backbone_path = os.path.join(
+            save_root, f"{self.model_name}_backbone_{epoch:04}.pth"
+        )
+        projection_path = os.path.join(
+            save_root, f"{self.model_name}_projection_{epoch:04}.pth"
+        )
+        classifier_main_path = os.path.join(
+            save_root, f"{self.model_name}_classifier_main_{epoch:04}.pth"
+        )
+        classifier_att_path = os.path.join(
+            save_root, f"{self.model_name}_classifier_att_{epoch:04}.pth"
+        )
 
         torch.save(self.backbone, backbone_path)
         torch.save(self.projection_head, projection_path)
@@ -184,14 +214,19 @@ class EfficientNet(nn.Module):
 
         backbone_path = os.path.join(load_root, f"backbone_{epoch:04}.pth")
         projection_path = os.path.join(load_root, f"projection_{epoch:04}.pth")
-        classifier_main_path = os.path.join(load_root, f"classifier_main_{epoch:04}.pth")
-        classifier_att_path = os.path.join(load_root, f"classifier_att_{epoch:04}.pth")
+        classifier_main_path = os.path.join(
+            load_root, f"classifier_main_{epoch:04}.pth"
+        )
+        classifier_att_path = os.path.join(
+            load_root, f"classifier_att_{epoch:04}.pth"
+        )
 
         self.backbone = torch.load(backbone_path)
         self.projection_head = torch.load(projection_path)
         self.classifier_main = torch.load(classifier_main_path)
         self.classifier_att = torch.load(classifier_att_path)
 
+    """
     def get_positive(self, anchor, positives, negatives):
         images = torch.cat([anchor, positives, negatives])
         features = self.get_feature(images)
@@ -222,3 +257,4 @@ class EfficientNet(nn.Module):
         # up = A[0][1:1+len(positives)].sum()
         # low = nn.Softmax(dim=1)(S)[0][1:].sum()
         # up = nn.Softmax(dim=1)(S)[0][1:][A[0][1:]>0].sum()
+    """

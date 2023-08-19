@@ -37,12 +37,12 @@ class RMset(Dataset):
         """
         anno_root: root_path which is many annotation file per a video
         data_root: image data root_path
+        transform: image transformation
         
-        
-        
+                
         """
 
-        self.anno_root = anno_root
+        self.anno_root = f"{anno_root}/{n_frame_skip:02}"
         self.anno_names = os.listdir(self.anno_root)
         self.data_root = data_root
         self.transform = transform
@@ -61,13 +61,6 @@ class RMset(Dataset):
         # random select annotation file
         anno_name = random.sample(self.anno_names, 1)[0]
         anno_df = pd.read_pickle(os.path.join(self.anno_root, anno_name))
-
-        # remain
-        remain = random.randrange(self.n_frame_skip)
-        anno_df = anno_df[
-            anno_df.frameNum % self.n_frame_skip == remain
-        ].reset_index(drop=True)
-        anno_df.frameNum = anno_df.frameNum.to_numpy() // self.skip_frame
 
         faceNum = len(anno_df.faceID.drop_duplicates())
         faceID = random.randrange(faceNum)
