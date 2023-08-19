@@ -107,7 +107,12 @@ class EfficientNet(nn.Module):
         # scaling
         return cos_sim_mat / self.scale
 
-    def forward(
+    def forward(self, x):
+        feature = self.get_feature(x)
+        output_tensor = self.classifier_main(feature)
+        return output_tensor
+
+    def forward_with_att(
         self, x: torch.Tensor
     ) -> (torch.Tensor, torch.Tensor, torch.Tensor):
         """

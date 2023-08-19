@@ -10,31 +10,27 @@ from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import ModelCheckpoint
 
-from utils.utils import get_option_dict_from_json, create_folder
-from models.efficientnet import EfficientNet
-from RMFER import RMFER
+from utils.utils import (
+    get_option_dict_from_json,
+    save_option_json_from_dict,
+    create_folder,
+    select_model,
+)
+from lightning_module_rmfer import Experiment
 
-ALLOWED_MODELS = ["enet-b2"]
-ALLOWED_OPTIMS = ["Adam"]
 
 parser = argparse.ArgumentParser(description="hyper parameter json")
 parser.add_argument(
     "--param",
     type=str,
-    help="hyper paramter args path",
+    help="hyper parameter args path",
     default="./configs/Base/AffectNet7.json",
 )
 arg_path = parser.parse_args()
 
 
 def train(args: dict):
-    # assert model and optimizer
-    model_name = args["learning_params"]["Base"]["model"]
-    optim_name = args["learning_params"]["Base"]["optimizer"]
-    assert model_name in ALLOWED_MODELS
-    assert optim_name in ALLOWED_OPTIMS
-
-    # default_root_dir
+    # make default_root_dir
     default_root_dir = os.path.join(
         args["logging_params"]["default_root_dir"],
         args["exp_params"]["exp_mode"],
@@ -62,14 +58,20 @@ def train(args: dict):
         save_top_k=0,
     )
 
+    # check this experiment is resumed
+    if not args["logging_params"]["wandb_id"]:
+        args["logging_params"]["wandb_id"] = wandb_logger.experiment.id
+        is_resume = False
+        save_option_json_from_dict(f"{checkpoint_path}/args.json", args)
+    else:
+        wandb_logger.experiment.id = args["logging_params"]["wandb_id"]
+        is_resume = True
+
     # select model
-    if model_name == "enet-b2":
-        model = EfficientNet(
-            emotions=args["exp_params"]["emotions"],
-            self_masking=args["learning_params"]["Attention"]["self_masking"],
-            scale=args["learning_params"]["Attention"]["scale"],
-        )
-    pl_module = RMFER(model=model, args=args)
+    model = select_model(args)
+
+    # init lightning module
+    pl_module = Experiment(model=model, args=args)
 
     trainer = Trainer(
         # exp setting
@@ -91,7 +93,9 @@ def train(args: dict):
         val_check_interval=args["logging_params"]["val_check_interval"],
         default_root_dir=default_root_dir,
     )
-    trainer.fit(model=pl_module)
+    trainer.fit(
+        model=pl_module, ckpt_path=checkpoint_path if is_resume else None
+    )
 
 
 if __name__ == "__main__":
