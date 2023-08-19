@@ -1,9 +1,12 @@
 {
     "exp_params":{
+        "exp_mode": "Base",
         "seed": 42,
         "emotions": 7,
         "devices": 1,
-        "strategy": "auto"
+        "strategy": "auto",
+        "max_epochs": 30,
+        "reload_dataloader": true
     },
     "data_params":{
         "main": {
@@ -18,9 +21,8 @@
     "learning_params":{
         "Base":{
             "model": "enet-b2",
-            "optimizer": "SAM",
-            "learning_rate": 0.000006,
-            "max_epochs": 30
+            "optimizer": "Adam",
+            "learning_rate": 0.000006
         },  
         "Attention":{
             "self_masking": true,
@@ -32,8 +34,9 @@
         "project": "refactoring",
         "exp_name": "Base",
         "val_check_interval": 0.1,
-        "default_root_dir": "/root/checkpoint/new",
+        "default_root_dir": "/root/checkpoint/",
         "save_model": true,
-        "patience_epoch": 150
+        "patience_epoch": 15,
+        "wandb_id": false
     }
 }

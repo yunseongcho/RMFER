@@ -148,10 +148,15 @@ class EfficientNet(nn.Module):
         Returns:
             torch.Tensor: self-masked similarity matrix
         """
+        batch_size = matrix.shape[0]
+        device = matrix.device
+        data_type = matrix.dtype
 
-        idx = np.diag_indices(matrix.shape[0])
+        idx = np.diag_indices(batch_size)
         matrix[idx[0], idx[1]] = (
-            (-10e6 * torch.ones(matrix.shape[0])).to(matrix.device).detach()
+            (-10e6 * torch.ones(batch_size, dtype=data_type))
+            .to(device)
+            .detach()
         )
         return matrix
 
