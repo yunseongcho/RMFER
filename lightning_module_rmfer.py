@@ -9,7 +9,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 import lightning.pytorch as pl
 from lightning.pytorch.utilities import CombinedLoader
-import torchmetrics
+from torchmetrics import Accuracy  # , ConfusionMatrix
 
 from datasets.AffectNet import get_AffectNet_DataLoader
 
@@ -31,14 +31,9 @@ class Experiment(pl.LightningModule):
         self.args = args
 
         # Best Measure initialize
-        self.init_Best_Measure()
-
-    def init_Acc(self):
-        torchmetrics.Accuracy()
-
-    def init_Best_Measure(self):
-        # Best Performance
-        self.best_Acc = 0
+        self.accuracy = Accuracy(
+            task="multiclass", num_classes=args["exp_params"]["emotions"]
+        )
 
     def train_dataloader(self) -> DataLoader | CombinedLoader:
         if self.args["data_params"]["main"]["dataset"] == "AffectNet":
@@ -71,12 +66,17 @@ class Experiment(pl.LightningModule):
         return combined_loader
 
     def validation_step(self, batch, _):
-        train_inputs, train_labels = batch["train"]
+        # train_inputs, train_labels = batch["train"]
         val_inputs, val_labels = batch["val"]
-        train_output_tensor = self.model(train_inputs)
-        val_output_tensor = self.model(val_inputs)
+        # train_preds = self.model(train_inputs)
+        val_preds = self.model(val_inputs)
 
-        return
+        self.accuracy(val_preds, val_labels)
+
+    def on_validation_end(self) -> None:
+        val_acc = self.accuracy.compute()
+        self.log("val_acc", value=val_acc)
+        self.accuracy.reset()
 
     def configure_optimizers(self):
         optimizer = self._select_optim()
