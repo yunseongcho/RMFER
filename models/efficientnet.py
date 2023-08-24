@@ -222,13 +222,17 @@ class EfficientNet(nn.Module):
             epoch (int | str): epoch
         """
 
-        backbone_path = os.path.join(load_root, f"backbone_{epoch:04}.pth")
-        projection_path = os.path.join(load_root, f"projection_{epoch:04}.pth")
+        backbone_path = os.path.join(
+            load_root, f"{self.model_name}_backbone_{epoch:04}.pth"
+        )
+        projection_path = os.path.join(
+            load_root, f"{self.model_name}_projection_{epoch:04}.pth"
+        )
         classifier_main_path = os.path.join(
-            load_root, f"classifier_main_{epoch:04}.pth"
+            load_root, f"{self.model_name}_classifier_main_{epoch:04}.pth"
         )
         classifier_att_path = os.path.join(
-            load_root, f"classifier_att_{epoch:04}.pth"
+            load_root, f"{self.model_name}_classifier_att_{epoch:04}.pth"
         )
 
         self.backbone = torch.load(backbone_path)

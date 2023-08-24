@@ -1,6 +1,5 @@
 {
     "exp_params":{
-        "exp_mode": "Base",
         "seed": 42,
         "emotions": 7,
         "devices": 1,
@@ -35,8 +34,7 @@
         "exp_name": "Base",
         "val_check_interval": 0.1,
         "default_root_dir": "/root/checkpoint/",
-        "save_model": true,
         "patience_epoch": 15,
-        "wandb_id": false
+        "wandb_id": "58ccmln3"
     }
 }

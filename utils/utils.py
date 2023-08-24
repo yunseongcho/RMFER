@@ -5,6 +5,7 @@ etc functions
 import os
 import json
 from models.efficientnet import EfficientNet
+from lightning.pytorch.loggers import WandbLogger
 
 ALLOWED_MODELS = ["enet-b2"]
 ALLOWED_OPTIMS = ["Adam"]
@@ -41,3 +42,26 @@ def select_model(args):
         )
 
     return model
+
+
+def get_wandb_logger(args, default_root_dir):
+    if not args["logging_params"]["wandb_id"]:
+        wandb_logger = WandbLogger(
+            project=args["logging_params"]["project"],
+            name=args["logging_params"]["exp_name"],
+            save_dir=default_root_dir,
+            log_model=False,
+        )
+        args["logging_params"]["wandb_id"] = wandb_logger.experiment.id
+        wandb_logger.log_hyperparams(params=args)
+        is_resume = False
+    else:
+        wandb_logger = WandbLogger(
+            project=args["logging_params"]["project"],
+            name=args["logging_params"]["exp_name"],
+            save_dir=default_root_dir,
+            log_model=False,
+            id=args["logging_params"]["wandb_id"],
+        )
+        is_resume = True
+    return wandb_logger, is_resume

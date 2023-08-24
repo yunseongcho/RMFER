@@ -7,11 +7,11 @@ import argparse
 
 import torch
 from lightning.pytorch import Trainer, seed_everything
-from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import ModelCheckpoint
 
 from utils.utils import (
     get_option_dict_from_json,
+    get_wandb_logger,
     save_option_json_from_dict,
     create_folder,
     select_model,
@@ -33,45 +33,42 @@ def train(args: dict):
     # make default_root_dir
     default_root_dir = os.path.join(
         args["logging_params"]["default_root_dir"],
-        args["exp_params"]["exp_mode"],
         args["logging_params"]["project"],
         args["logging_params"]["exp_name"],
     )
     create_folder(default_root_dir)
 
     # logger: WandB
-    wandb_logger = WandbLogger(
-        project=args["logging_params"]["project"],
-        name=args["logging_params"]["exp_name"],
-        save_dir=default_root_dir,
-        log_model=False,
+    wandb_logger, is_resume = get_wandb_logger(
+        args=args, default_root_dir=default_root_dir
     )
-    wandb_logger.log_hyperparams(params=args)
 
     # checkpointing
-    checkpoint_path = os.path.join(default_root_dir, wandb_logger.experiment.id)
-    create_folder(checkpoint_path)
+    checkpoint_dir = os.path.join(default_root_dir, wandb_logger.experiment.id)
+    create_folder(checkpoint_dir)
     checkpoint_callback = ModelCheckpoint(
-        dirpath=checkpoint_path,
+        dirpath=checkpoint_dir,
         save_last=True,  # This will save a 'last.ckpt' file in the directory
         verbose=True,
         save_top_k=0,
     )
 
     # check this experiment is resumed
-    if not args["logging_params"]["wandb_id"]:
+    if not is_resume:
         args["logging_params"]["wandb_id"] = wandb_logger.experiment.id
-        is_resume = False
-        save_option_json_from_dict(f"{checkpoint_path}/args.json", args)
-    else:
-        wandb_logger.experiment.id = args["logging_params"]["wandb_id"]
-        is_resume = True
+        save_option_json_from_dict(f"{checkpoint_dir}/args.json", args)
 
     # select model
     model = select_model(args)
 
     # init lightning module
-    pl_module = Experiment(model=model, args=args)
+    pl_module = Experiment(
+        model=model,
+        args=args,
+        is_resume=is_resume,
+        default_root_dir=default_root_dir,
+        checkpoint_dir=checkpoint_dir,
+    )
 
     trainer = Trainer(
         # exp setting
@@ -79,7 +76,7 @@ def train(args: dict):
         accelerator="gpu",
         strategy=args["exp_params"]["strategy"],
         deterministic=True,
-        num_sanity_val_steps=2,
+        num_sanity_val_steps=-1,
         # train setting
         max_epochs=args["exp_params"]["max_epochs"],
         reload_dataloaders_every_n_epochs=args["exp_params"][
@@ -94,7 +91,8 @@ def train(args: dict):
         default_root_dir=default_root_dir,
     )
     trainer.fit(
-        model=pl_module, ckpt_path=checkpoint_path if is_resume else None
+        model=pl_module,
+        ckpt_path=f"{checkpoint_dir}/last.ckpt" if is_resume else None,
     )
 
 
