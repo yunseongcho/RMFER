@@ -7,7 +7,7 @@ import argparse
 
 import torch
 from lightning.pytorch import Trainer, seed_everything
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
 from utils.utils import (
     get_option_dict_from_json,
@@ -58,6 +58,17 @@ def train(args: dict):
         args["logging_params"]["wandb_id"] = wandb_logger.experiment.id
         save_option_json_from_dict(f"{checkpoint_dir}/args.json", args)
 
+    # early stopping
+    patience = int(
+        args["logging_params"]["patience_epoch"]
+        / args["logging_params"]["val_check_interval"]
+    )
+    measure = args["exp_params"]["measure"]
+    measure_txt = f"[Best] valid_origin_{measure}_accuracy"
+    early_stop_callback = EarlyStopping(
+        measure_txt, patience=patience, mode="max"
+    )
+
     # select model
     model = select_model(args)
 
@@ -72,14 +83,14 @@ def train(args: dict):
         accelerator="gpu",
         strategy=args["exp_params"]["strategy"],
         deterministic=True,
-        num_sanity_val_steps=2,
+        num_sanity_val_steps=0,
         # train setting
         max_epochs=args["exp_params"]["max_epochs"],
         reload_dataloaders_every_n_epochs=args["exp_params"][
             "reload_dataloader"
         ],
         precision="16-mixed",
-        callbacks=[checkpoint_callback],
+        callbacks=[checkpoint_callback, early_stop_callback],
         # log setting
         enable_model_summary=False,
         logger=wandb_logger,

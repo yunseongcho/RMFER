@@ -2,6 +2,7 @@
     "exp_params":{
         "seed": 42,
         "emotions": 7,
+        "measure": "overall",
         "devices": 1,
         "strategy": "auto",
         "max_epochs": 30,
@@ -21,17 +22,17 @@
         "Base":{
             "model": "enet-b2",
             "optimizer": "SAM",
-            "learning_rate": 0.001
+            "learning_rate": 0.000002
         },  
         "Attention":{
             "self_masking": true,
-            "scale": 0.1,
+            "scale": 1.0,
             "weight_att": 0.0
         }
     },
     "logging_params":{
         "project": "WACV24",
-        "exp_name": "lr_0.001",
+        "exp_name": "lr_0.000002",
         "val_check_interval": 0.1,
         "default_root_dir": "/root/checkpoint/",
         "patience_epoch": 15,
