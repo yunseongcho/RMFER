@@ -22,18 +22,11 @@ class Experiment(pl.LightningModule):
         pl (_type_): _description_
     """
 
-    def __init__(
-        self, model, args, is_resume, default_root_dir, checkpoint_dir
-    ) -> None:
+    def __init__(self, model, args: dict) -> None:
         super().__init__()
-
-        self.default_root_dir = default_root_dir
-        self.checkpoint_dir = checkpoint_dir
 
         # self.automatic_optimization = False
         self.model = model
-        if is_resume:
-            self.model.load_model(load_root=self.checkpoint_dir, epoch="last")
         self.args = args
 
         # Best Measure initialize
@@ -83,7 +76,6 @@ class Experiment(pl.LightningModule):
         val_acc = self.accuracy.compute()
         self.logger.experiment.log({"val_acc": val_acc})
         self.accuracy.reset()
-        self.model.save_model(save_root=self.checkpoint_dir, epoch="last")
 
     def configure_optimizers(self):
         optimizer = self._select_optim()

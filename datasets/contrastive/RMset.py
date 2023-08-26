@@ -29,18 +29,10 @@ class RMset(Dataset):
         data_root: str,
         n_positive: int,
         n_negative: int,
-        d_range_sec: int,
         n_frame_skip: int,
         transform: transforms.Compose | None = None,
     ) -> None:
         super().__init__()
-        """
-        anno_root: root_path which is many annotation file per a video
-        data_root: image data root_path
-        transform: image transformation
-        
-                
-        """
 
         self.anno_root = f"{anno_root}/{n_frame_skip:02}"
         self.anno_names = os.listdir(self.anno_root)
@@ -50,7 +42,6 @@ class RMset(Dataset):
         # for contrastive
         self.n_positive = n_positive
         self.n_negative = n_negative
-        self.d_range_sec = d_range_sec
         self.n_frame_skip = n_frame_skip
 
     def __len__(self):

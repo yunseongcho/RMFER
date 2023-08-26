@@ -62,13 +62,7 @@ def train(args: dict):
     model = select_model(args)
 
     # init lightning module
-    pl_module = Experiment(
-        model=model,
-        args=args,
-        is_resume=is_resume,
-        default_root_dir=default_root_dir,
-        checkpoint_dir=checkpoint_dir,
-    )
+    pl_module = Experiment(model=model, args=args)
 
     trainer = Trainer(
         # exp setting

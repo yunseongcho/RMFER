@@ -1,0 +1,40 @@
+{
+    "exp_params":{
+        "seed": 42,
+        "emotions": 7,
+        "devices": 1,
+        "strategy": "auto",
+        "max_epochs": 30,
+        "reload_dataloader": true
+    },
+    "data_params":{
+        "main": {
+            "dataset": "AffectNet",
+            "train_anno_path": "/root/dataset/AffectNet_aligned/training.csv",
+            "val_anno_path": "/root/dataset/AffectNet_aligned/validation.csv",
+            "data_root": "/root/dataset/AffectNet_aligned/images",
+            "batch_size": 32,
+            "num_workers": 8
+        }
+    },
+    "learning_params":{
+        "Base":{
+            "model": "enet-b2",
+            "optimizer": "Adam",
+            "learning_rate": 0.000006
+        },  
+        "Attention":{
+            "self_masking": true,
+            "scale": 0.0,
+            "weight_att": 0.0
+        }
+    },
+    "logging_params":{
+        "project": "refactoring",
+        "exp_name": "Base",
+        "val_check_interval": 0.1,
+        "default_root_dir": "/root/checkpoint/",
+        "patience_epoch": 15,
+        "wandb_id": false
+    }
+}
