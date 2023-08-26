@@ -6,6 +6,10 @@ import torch
 
 
 class SAMOptimizer(torch.optim.Optimizer):
+    """
+    SAM optimizer define
+    """
+
     def __init__(self, params, base_optimizer, eps=0.05, **kwargs):
         defaults = dict(rho=eps, **kwargs)
         super(SAMOptimizer, self).__init__(params, defaults)

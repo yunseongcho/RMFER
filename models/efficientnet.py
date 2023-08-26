@@ -56,9 +56,9 @@ class EfficientNet(nn.Module):
             )
 
         self.projection_head = nn.Sequential(
-            nn.Linear(in_features=1408, out_features=1408),
+            nn.Linear(in_features=1408, out_features=1408, dtype=torch.float16),
             nn.ReLU(),
-            nn.Linear(in_features=1408, out_features=1408),
+            nn.Linear(in_features=1408, out_features=1408, dtype=torch.float16),
         )
 
         # Attention param
@@ -82,7 +82,7 @@ class EfficientNet(nn.Module):
 
         return self.backbone(x)
 
-    def get_cos_sim_mat(self, f: torch.Tensor) -> torch.Tensor:
+    def get_cos_sim_mat(self, f: torch.Tensor, scale=None) -> torch.Tensor:
         """
 
         Args:
@@ -91,6 +91,8 @@ class EfficientNet(nn.Module):
         Returns:
             torch.Tensor: scaled cosine similarity matrix
         """
+        if not scale:
+            scale = self.scale
 
         # feature to z
         z = self.projection_head(f)
@@ -105,14 +107,14 @@ class EfficientNet(nn.Module):
         cos_sim_mat = sim_mat / torch.matmul(norms.T, norms)
 
         # scaling
-        return cos_sim_mat / self.scale
+        return cos_sim_mat / scale
 
     def forward(self, x):
         feature = self.get_feature(x)
         output_tensor = self.classifier_main(feature)
         return output_tensor
 
-    def forward_with_att(
+    def forward_with_attention(
         self, x: torch.Tensor
     ) -> (torch.Tensor, torch.Tensor, torch.Tensor):
         """
@@ -142,9 +144,16 @@ class EfficientNet(nn.Module):
         # attention feature를 classifier_att 통과시켜 attention output 생성
         attention_output_tensor = self.classifier_att(attention_feature)
 
-        return origin_output_tensor, attention_output_tensor, att_mat
+        return (
+            origin_output_tensor,
+            attention_output_tensor,
+            att_mat,
+            origin_feature,
+        )
 
-    def self_masking_matrix(self, matrix: torch.Tensor) -> torch.Tensor:
+    def self_masking_matrix(
+        self, matrix: torch.Tensor, replace: float = -10e6
+    ) -> torch.Tensor:
         """
 
         Args:
@@ -159,7 +168,7 @@ class EfficientNet(nn.Module):
 
         idx = np.diag_indices(batch_size)
         matrix[idx[0], idx[1]] = (
-            (-10e6 * torch.ones(batch_size, dtype=data_type))
+            (replace * torch.ones(batch_size, dtype=data_type))
             .to(device)
             .detach()
         )

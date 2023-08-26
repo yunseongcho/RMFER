@@ -24,7 +24,7 @@ parser.add_argument(
     "--param",
     type=str,
     help="hyper parameter args path",
-    default="./configs/Base/AffectNet7.json",
+    default="./configs/Base/AffectNet7_base.json",
 )
 arg_path = parser.parse_args()
 
@@ -62,7 +62,9 @@ def train(args: dict):
     model = select_model(args)
 
     # init lightning module
-    pl_module = Experiment(model=model, args=args)
+    pl_module = Experiment(
+        model=model, args=args, default_root_dir=default_root_dir
+    )
 
     trainer = Trainer(
         # exp setting
@@ -70,7 +72,7 @@ def train(args: dict):
         accelerator="gpu",
         strategy=args["exp_params"]["strategy"],
         deterministic=True,
-        num_sanity_val_steps=-1,
+        num_sanity_val_steps=2,
         # train setting
         max_epochs=args["exp_params"]["max_epochs"],
         reload_dataloaders_every_n_epochs=args["exp_params"][
