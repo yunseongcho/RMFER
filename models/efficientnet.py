@@ -56,9 +56,9 @@ class EfficientNet(nn.Module):
             )
 
         self.projection_head = nn.Sequential(
-            nn.Linear(in_features=1408, out_features=1408, dtype=torch.float16),
+            nn.Linear(in_features=1408, out_features=1408),
             nn.ReLU(),
-            nn.Linear(in_features=1408, out_features=1408, dtype=torch.float16),
+            nn.Linear(in_features=1408, out_features=1408),
         )
 
         # Attention param
@@ -109,12 +109,12 @@ class EfficientNet(nn.Module):
         # scaling
         return cos_sim_mat / scale
 
-    def forward(self, x):
+    def forward_only_origin(self, x):
         feature = self.get_feature(x)
         output_tensor = self.classifier_main(feature)
         return output_tensor
 
-    def forward_with_attention(
+    def forward(
         self, x: torch.Tensor
     ) -> (torch.Tensor, torch.Tensor, torch.Tensor):
         """

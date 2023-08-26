@@ -5,7 +5,7 @@
         "measure": "overall",
         "devices": 1,
         "strategy": "auto",
-        "max_epochs": 30,
+        "max_epochs": 20,
         "reload_dataloader": true
     },
     "data_params":{

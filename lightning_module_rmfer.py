@@ -177,7 +177,7 @@ class Experiment(pl.LightningModule):
             attention_outputs,
             _,
             _,
-        ) = self.model.forward_with_attention(inputs)
+        ) = self.model(inputs)
         origin_loss = nn.CrossEntropyLoss()(origin_outputs, labels)
         attention_loss = nn.CrossEntropyLoss()(attention_outputs, labels)
 
@@ -266,7 +266,7 @@ class Experiment(pl.LightningModule):
             attention_outputs,
             A,
             origin_features,
-        ) = self.model.forward_with_attention(inputs)
+        ) = self.model(inputs)
 
         origin_loss = nn.CrossEntropyLoss()(origin_outputs, labels)
         attention_loss = nn.CrossEntropyLoss()(attention_outputs, labels)

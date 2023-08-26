@@ -7,7 +7,9 @@ import argparse
 
 import torch
 from lightning.pytorch import Trainer, seed_everything
-from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.callbacks import ModelCheckpoint  # , EarlyStopping
+
+# from lightning.pytorch.plugins.precision import MixedPrecisionPlugin
 
 from utils.utils import (
     get_option_dict_from_json,
@@ -43,6 +45,10 @@ def train(args: dict):
         args=args, default_root_dir=default_root_dir
     )
 
+    # plugin
+
+    # precision_plugin = MixedPrecisionPlugin(precision="16-mixed", device="cuda")
+
     # checkpointing
     checkpoint_dir = os.path.join(default_root_dir, wandb_logger.experiment.id)
     create_folder(checkpoint_dir)
@@ -59,6 +65,7 @@ def train(args: dict):
         save_option_json_from_dict(f"{checkpoint_dir}/args.json", args)
 
     # early stopping
+    """
     patience = int(
         args["logging_params"]["patience_epoch"]
         / args["logging_params"]["val_check_interval"]
@@ -68,7 +75,7 @@ def train(args: dict):
     early_stop_callback = EarlyStopping(
         measure_txt, patience=patience, mode="max"
     )
-
+    """
     # select model
     model = select_model(args)
 
@@ -83,14 +90,15 @@ def train(args: dict):
         accelerator="gpu",
         strategy=args["exp_params"]["strategy"],
         deterministic=True,
-        num_sanity_val_steps=0,
+        num_sanity_val_steps=2,
         # train setting
         max_epochs=args["exp_params"]["max_epochs"],
         reload_dataloaders_every_n_epochs=args["exp_params"][
             "reload_dataloader"
         ],
-        precision="16-mixed",
-        callbacks=[checkpoint_callback, early_stop_callback],
+        # precision="16-mixed",
+        # plugins=[precision_plugin],
+        callbacks=[checkpoint_callback],
         # log setting
         enable_model_summary=False,
         logger=wandb_logger,
