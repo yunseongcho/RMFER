@@ -10,22 +10,22 @@ import lightning.pytorch as pl
 from lightning.pytorch.utilities import CombinedLoader
 from torchmetrics import Accuracy  # , ConfusionMatrix
 
+from optimizer.SAM import SAMOptimizer
 from datasets.AffectNet import get_AffectNet_DataLoader
 
-ALLOWED_OPTIMS = ["Adam"]
+ALLOWED_OPTIMS = ["Adam", "SAM"]
 
 
 class Experiment(pl.LightningModule):
-    """_summary_
-
-    Args:
-        pl (_type_): _description_
+    """
+    RMFER experiment
     """
 
     def __init__(self, model, args: dict) -> None:
         super().__init__()
 
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
+
         self.model = model
         self.args = args
 
@@ -50,9 +50,25 @@ class Experiment(pl.LightningModule):
         return loss_pretrain
 
     def training_step(self, batch, _):
+        # data
         inputs, labels = batch
+
+        # optimizer define
+        opt = self.optimizers()
+
+        ## SAM
+        # calculate loss & first step
         loss_pretrain = self.attention_step(inputs, labels)
-        return loss_pretrain
+        self.manual_backward(loss_pretrain)
+        opt.first_step(zero_grad=True)
+
+        # calculate loss & second step
+        loss_pretrain = self.attention_step(inputs, labels)
+        self.manual_backward(loss_pretrain)
+        opt.second_step(zero_grad=True)
+
+        # log loss
+        self.log("train_loss", loss_pretrain)
 
     def val_dataloader(self) -> CombinedLoader:
         if self.args["data_params"]["main"]["dataset"] == "AffectNet":
@@ -67,6 +83,7 @@ class Experiment(pl.LightningModule):
     def validation_step(self, batch, _):
         # train_inputs, train_labels = batch["train"]
         val_inputs, val_labels = batch["val"]
+
         # train_preds = self.model(train_inputs)
         val_preds = self.model(val_inputs)
 
@@ -88,6 +105,12 @@ class Experiment(pl.LightningModule):
         if optim_name == "Adam":
             optimizer = torch.optim.Adam(
                 self.model.parameters(),
+                lr=self.args["learning_params"]["Base"]["learning_rate"],
+            )
+        elif optim_name == "SAM":
+            optimizer = SAMOptimizer(
+                filter(lambda p: p.requires_grad, self.model.parameters()),
+                torch.optim.Adam,
                 lr=self.args["learning_params"]["Base"]["learning_rate"],
             )
         return optimizer

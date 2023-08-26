@@ -4,11 +4,11 @@
         "emotions": 7,
         "devices": 1,
         "strategy": "auto",
-        "max_epochs": 30,
+        "max_epochs": 15,
         "reload_dataloader": true
     },
     "data_params":{
-        "main": {
+        "benchmark": {
             "dataset": "AffectNet",
             "train_anno_path": "/root/dataset/AffectNet_aligned/training.csv",
             "val_anno_path": "/root/dataset/AffectNet_aligned/validation.csv",
@@ -16,7 +16,7 @@
             "batch_size": 32,
             "num_workers": 8
         },
-        "semi": {
+        "contrastive": {
             "dataset": "RMset",
             "anno_root": "/root/dataset/RMset/annotations/augmented_anno_df/",
             "data_root": "/root/dataset/RMset/",
@@ -27,8 +27,8 @@
     "learning_params":{
         "Base":{
             "model": "enet-b2",
-            "optimizer": "Adam",
-            "learning_rate": 0.000006
+            "optimizer": "SAM",
+            "learning_rate": 0.000002
         },  
         "Attention":{
             "self_masking": true,
@@ -37,11 +37,11 @@
         }
     },
     "logging_params":{
-        "project": "refactoring",
+        "project": "WACV",
         "exp_name": "Base",
         "val_check_interval": 0.1,
         "default_root_dir": "/root/checkpoint/",
         "patience_epoch": 15,
-        "wandb_id": "58ccmln3"
+        "wandb_id": false
     }
 }

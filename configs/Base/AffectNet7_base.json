@@ -20,18 +20,18 @@
     "learning_params":{
         "Base":{
             "model": "enet-b2",
-            "optimizer": "Adam",
-            "learning_rate": 0.000006
+            "optimizer": "SAM",
+            "learning_rate": 0.000002
         },  
         "Attention":{
             "self_masking": true,
-            "scale": 0.0,
-            "weight_att": 0.0
+            "scale": 0.1,
+            "weight_att": 0.1
         }
     },
     "logging_params":{
-        "project": "refactoring",
-        "exp_name": "Base",
+        "project": "WACV",
+        "exp_name": "Att0.1_scale0.1",
         "val_check_interval": 0.1,
         "default_root_dir": "/root/checkpoint/",
         "patience_epoch": 15,
