@@ -286,9 +286,9 @@ class Experiment(pl.LightningModule):
         # update Attention Matrix
         attention_matrix = self.attention_matrix[data_type]
         update_attention_matrix(
-            batch_A=A,
-            value_A=attention_matrix["value"],
-            count_A=attention_matrix["count"],
+            batch_attention_matrix=A,
+            value_attention_matrix=attention_matrix["value"],
+            count_attention_matrix=attention_matrix["count"],
             labels=labels,
         )
 
