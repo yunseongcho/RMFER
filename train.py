@@ -18,7 +18,7 @@ from utils.utils import (
     create_folder,
     select_model,
 )
-from lightning_module_rmfer import Experiment
+from LightningModule_RMFER import Experiment
 
 
 parser = argparse.ArgumentParser(description="hyper parameter json")

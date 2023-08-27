@@ -2,20 +2,25 @@
 """
 RMFER lightning module
 """
-import io
+
 
 import lightning.pytorch as pl
 import numpy as np
 import torch
 import wandb
 from lightning.pytorch.utilities import CombinedLoader
-from matplotlib import pyplot as plt
-from mlxtend.plotting import heatmap, plot_confusion_matrix
-from PIL import Image
+
 from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics import Accuracy, ConfusionMatrix
 
+from utils.experiments import (
+    update_accuracy_confusion_matrix,
+    update_attention_matrix,
+    get_confusion_matrix_plot,
+    get_attention_matrix_plot,
+    img_from_buffer,
+)
 from datasets.AffectNet import get_AffectNet_DataLoader
 from optimizer.SAM import SAMOptimizer
 
@@ -30,7 +35,7 @@ class Experiment(pl.LightningModule):
     def __init__(self, model, args: dict, default_root_dir: str) -> None:
         super().__init__()
 
-        self.automatic_optimization = False
+        # self.automatic_optimization = False
 
         self.model = model
         self.args = args
@@ -232,34 +237,6 @@ class Experiment(pl.LightningModule):
         combined_loader = CombinedLoader(iterables, mode="min_size")
         return combined_loader
 
-    def update_accuracy_confusion_matrix(
-        self,
-        outputs: torch.Tensor,
-        labels: torch.Tensor,
-        accuracy: Accuracy,
-        confusion_matrix: ConfusionMatrix,
-    ) -> None:
-        """
-        self accuracy & confusion_matrix update
-
-        Args:
-            outputs (torch.Tensor): _description_
-            labels (torch.Tensor): _description_
-            accuracy (Accuracy): _description_
-            confusion_matrix (ConfusionMatrix): _description_
-        """
-        accuracy(outputs, labels)
-        confusion_matrix(outputs, labels)
-
-    # Attention Matrix update: mat method = 'contain'
-    def update_attention_matrix(self, batch_A, value_A, count_A, labels):
-        for idx_i, label_i in enumerate(labels):
-            for idx_j, label_j in enumerate(labels):
-                if idx_i == idx_j:
-                    continue
-                value_A[label_i][label_j] += batch_A[idx_i][idx_j]
-                count_A[label_i][label_j] += 1
-
     def validation_outputs(self, inputs, labels):
         (
             origin_outputs,
@@ -292,14 +269,14 @@ class Experiment(pl.LightningModule):
         self.labels[data_type].append(labels)
 
         # origin
-        self.update_accuracy_confusion_matrix(
+        update_accuracy_confusion_matrix(
             outputs=origin_outputs,
             labels=labels,
             accuracy=accuracy["origin"],
             confusion_matrix=confusion_matrix["origin"],
         )
         # attention
-        self.update_accuracy_confusion_matrix(
+        update_accuracy_confusion_matrix(
             outputs=attention_outputs,
             labels=labels,
             accuracy=accuracy["attention"],
@@ -308,7 +285,7 @@ class Experiment(pl.LightningModule):
 
         # update Attention Matrix
         attention_matrix = self.attention_matrix[data_type]
-        self.update_attention_matrix(
+        update_attention_matrix(
             batch_A=A,
             value_A=attention_matrix["value"],
             count_A=attention_matrix["count"],
@@ -342,8 +319,9 @@ class Experiment(pl.LightningModule):
         inference_type: str,
         confusion_matrix: ConfusionMatrix,
     ):
-        recalls = np.zeros(self.emotions)
-        for emotion in range(self.args["exp_params"]["emotions"]):
+        n_emotion = self.emotions
+        recalls = np.zeros(n_emotion)
+        for emotion in range(n_emotion):
             # recall 계산 try
             recall = (
                 confusion_matrix[emotion][emotion].item()
@@ -352,43 +330,12 @@ class Experiment(pl.LightningModule):
             recalls[emotion] = recall
 
         ## Logging
-        for emotion in range(self.args["exp_params"]["emotions"]):
+        for emotion in range(n_emotion):
             expression_name = self.label2exp_dict[emotion]
             txt = f"{data_type}_{inference_type}_{expression_name}_recall"
             self.logger.experiment.log({txt: recalls[emotion]})
 
         return recalls.mean()
-
-    # make confusion matrix plot
-    # use when appear new best measure
-    def get_confusion_matrix_plot(self, confusion_matrix):
-        figure, _ = plot_confusion_matrix(
-            conf_mat=confusion_matrix,
-            colorbar=True,
-            show_absolute=False,
-            show_normed=True,
-            class_names=self.expression_labels,
-        )
-        return figure
-
-    # make attention matrix plot
-    # use when appear new best attention
-    def get_attention_matrix_plot(self, attention_matrix):
-        figure, _ = heatmap(
-            attention_matrix,
-            row_names=self.expression_labels,
-            column_names=self.expression_labels,
-        )
-        return figure
-
-    # convert plt figure to PIL Image
-    def Img_from_Buffer(self, figure):
-        buffer = io.BytesIO()
-        figure.savefig(buffer)
-        buffer.seek(0)
-        del figure
-        plt.close()
-        return Image.open(buffer)
 
     # log Confusion Matrix image
     def log_confusion_matrix(
@@ -398,8 +345,10 @@ class Experiment(pl.LightningModule):
         measure: str,
     ):
         confusion_matrix = confusion_matrix.cpu()
-        confusion_image = self.Img_from_Buffer(
-            self.get_confusion_matrix_plot(confusion_matrix.numpy())
+        confusion_image = img_from_buffer(
+            get_confusion_matrix_plot(
+                confusion_matrix.numpy(), self.expression_labels
+            )
         )
         wandb.log(
             {
@@ -411,8 +360,8 @@ class Experiment(pl.LightningModule):
 
     # log Attention Matrix image
     def log_attention_matrix(self, attention_matrix, txt: str):
-        AttImage = self.Img_from_Buffer(
-            self.get_attention_matrix_plot(attention_matrix)
+        AttImage = img_from_buffer(
+            get_attention_matrix_plot(attention_matrix, self.expression_labels)
         )
         wandb.log(
             {

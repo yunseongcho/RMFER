@@ -15,7 +15,7 @@
             "val_anno_path": "/root/dataset/AffectNet_aligned/validation.csv",
             "data_root": "/root/dataset/AffectNet_aligned/images",
             "batch_size": 32,
-            "num_workers": 8
+            "num_workers": 4
         }
     },
     "learning_params":{
@@ -27,12 +27,12 @@
         "Attention":{
             "self_masking": true,
             "scale": 1.0,
-            "weight_att": 0.0
+            "weight_att": 1.2
         }
     },
     "logging_params":{
         "project": "WACV24",
-        "exp_name": "lr_0.000002",
+        "exp_name": "Att1.2_scale1.0",
         "val_check_interval": 0.1,
         "default_root_dir": "/root/checkpoint/",
         "patience_epoch": 15,
