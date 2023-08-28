@@ -22,17 +22,17 @@
         "Base":{
             "model": "enet-b2",
             "optimizer": "SAM",
-            "learning_rate": 0.000002
+            "learning_rate": 0.0001
         },  
         "Attention":{
             "self_masking": true,
             "scale": 1.0,
-            "weight_att": 1.2
+            "weight_att": 0
         }
     },
     "logging_params":{
         "project": "WACV24",
-        "exp_name": "Att1.2_scale1.0",
+        "exp_name": "fp16_test",
         "val_check_interval": 0.1,
         "default_root_dir": "/root/checkpoint/",
         "patience_epoch": 15,

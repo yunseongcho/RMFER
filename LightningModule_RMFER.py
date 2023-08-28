@@ -35,7 +35,7 @@ class Experiment(pl.LightningModule):
     def __init__(self, model, args: dict, default_root_dir: str) -> None:
         super().__init__()
 
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
 
         self.model = model
         self.args = args
@@ -221,7 +221,9 @@ class Experiment(pl.LightningModule):
         opt.second_step(zero_grad=True)
 
         # log loss
-        self.log("training_loss", loss_pretrain)
+        self.log("total_loss", loss_pretrain)
+
+        # return loss_pretrain
 
     # -------------------------------------------------------------------------------------#
     # for Validation
@@ -467,7 +469,9 @@ class Experiment(pl.LightningModule):
 
             features = torch.cat(self.features[data_type])
             labels = torch.cat(self.labels[data_type])
-            cos_sim_mat = self.model.get_cos_sim_mat(features, 1.0)
+            with torch.inference_mode():
+                with torch.autocast(device_type=self.device.type):
+                    cos_sim_mat = self.model.get_cos_sim_mat(features, 1.0)
             equal_mat = labels.view(-1, 1) == labels.view(1, -1)
             diff_mat = labels.view(-1, 1) != labels.view(1, -1)
 

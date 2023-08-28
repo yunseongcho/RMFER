@@ -9,7 +9,7 @@ import torch
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint  # , EarlyStopping
 
-# from lightning.pytorch.plugins.precision import MixedPrecisionPlugin
+from lightning.pytorch.plugins.precision import MixedPrecisionPlugin
 
 from utils.utils import (
     get_option_dict_from_json,
@@ -20,6 +20,7 @@ from utils.utils import (
 )
 from LightningModule_RMFER import Experiment
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 parser = argparse.ArgumentParser(description="hyper parameter json")
 parser.add_argument(
@@ -47,7 +48,7 @@ def train(args: dict):
 
     # plugin
 
-    # precision_plugin = MixedPrecisionPlugin(precision="16-mixed", device="cuda")
+    precision_plugin = MixedPrecisionPlugin(precision="16-mixed", device="cuda")
 
     # checkpointing
     checkpoint_dir = os.path.join(default_root_dir, wandb_logger.experiment.id)
@@ -96,7 +97,7 @@ def train(args: dict):
         reload_dataloaders_every_n_epochs=args["exp_params"][
             "reload_dataloader"
         ],
-        # precision="16-mixed",
+        precision="16-mixed",
         # plugins=[precision_plugin],
         callbacks=[checkpoint_callback],
         # log setting
